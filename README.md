@@ -24,6 +24,9 @@ https://www.heliumsmartworld.com/
 example NFT on Explorer
 https://opensea.io/item/polygon/0xd29858dad43ec777c31e3051b4601a04da6f3e5d/174
 https://opensea.io/item/polygon/0xd29858dad43ec777c31e3051b4601a04da6f3e5d/162
+********************************************
+Example RWB as NFT in your Personal Wallet
+![IMG_4378](https://github.com/user-attachments/assets/3f0e661f-fb2b-4b60-838a-45303f778aa1)
 
 
 <img width="1621" height="564" alt="Screenshot 2025-09-19 at 21 54 35" src="https://github.com/user-attachments/assets/52365526-ded5-438e-b219-c29e98590dfc" />
