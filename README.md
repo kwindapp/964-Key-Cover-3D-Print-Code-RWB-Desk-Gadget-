@@ -25,7 +25,8 @@ example NFT on Explorer
 https://opensea.io/item/polygon/0xd29858dad43ec777c31e3051b4601a04da6f3e5d/174
 https://opensea.io/item/polygon/0xd29858dad43ec777c31e3051b4601a04da6f3e5d/162
 ********************************************
-Example RWB as NFT in your Personal Wallet
+
+Example RWB as NFT in your Personal Wallet use the Ronin Wallet on Desktop and Mobile Phone
 
 ![IMG_4378](https://github.com/user-attachments/assets/58294b18-907a-4438-9568-75bcb2927f8e)
 
