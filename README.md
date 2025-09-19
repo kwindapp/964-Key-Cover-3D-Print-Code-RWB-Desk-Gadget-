@@ -1,5 +1,6 @@
 “Simple raw version of the RWB 964 Keycocer 3D print. It’s not perfect yet, but if anyone wants to participate, give feedback, or help improve it, your support is welcome.”
-![IMG_4369](https://github.com/user-attachments/assets/5011d079-4947-4821-8d72-fa88a24a0693)
+
+![IMG_4375](https://github.com/user-attachments/assets/718d3c60-9f66-4372-95ce-62ccf13e80b6)
 
 
 
