@@ -1,6 +1,6 @@
 -964 3D Print Key Cover
 -Code ESP32 Desk Gadget RWB
-######-Product NFT Mint Toll ..Mint a NFT from your RWB linked with Serial Number and builld date.(Polygon smart contract still in development mint is for free!)
+######-Product NFT Mint Tool ..Mint a NFT from your RWB linked with Serial Number and builld date.(Polygon smart contract still in development mint is for free!)
 
 “Simple raw version of the RWB 964 Keycocer 3D print. It’s not perfect yet, but if anyone wants to participate, give feedback, or help improve it, your support is welcome.”
 
