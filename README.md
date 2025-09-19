@@ -14,7 +14,6 @@ https://youtu.be/MAoOQjsmGrs?si=w2wzaIbdclqMSdoF
 Order a 
 ilygo Board and Webflash connect with wifi (timezone change button 2).
 
-![IMG_3118](https://github.com/user-attachments/assets/20fde237-265a-42c0-9ae7-b48fa367b7d6)
 
 ![IMG_3114](https://github.com/user-attachments/assets/2d05325f-2056-46a6-ac55-c5bdf97cf6e7)
 https://lilygo.cc/products/t-display-s3?variant=42284559827125
