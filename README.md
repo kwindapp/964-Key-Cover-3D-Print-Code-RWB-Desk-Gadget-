@@ -6,6 +6,7 @@
 
 "Turn a LilyGo ESP32 into a mini RWB desk gadget — just copy your RWB into the code."
 https://www.youtube.com/shorts/P5Maxz4nuWg
+https://youtu.be/MAoOQjsmGrs?si=w2wzaIbdclqMSdoF
 Order a 
 ilygo Board and Webflash connect with wifi (timezone change button 2).
 
