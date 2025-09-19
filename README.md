@@ -25,3 +25,4 @@ example NFT on Explorer
 https://opensea.io/item/polygon/0xd29858dad43ec777c31e3051b4601a04da6f3e5d/162
 
 
+<img width="1621" height="564" alt="Screenshot 2025-09-19 at 21 54 35" src="https://github.com/user-attachments/assets/52365526-ded5-438e-b219-c29e98590dfc" />
