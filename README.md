@@ -7,12 +7,14 @@ RWB-964 3D Print Key Cover (not final version)
 <img width="570" height="269" alt="Screenshot 2025-09-20 at 10 07 07" src="https://github.com/user-attachments/assets/6d2430fb-eab8-43a7-97a7-251052577732" />
 
 
-![IMG_4390](https://github.com/user-attachments/assets/35a9d311-186d-4084-b938-3fd71d3abf5f)
+
 
 
 https://www.youtube.com/shorts/P5Maxz4nuWg 
 "Turn a LilyGo ESP32 into a mini RWB desk gadget — just copy your RWB into the code."
  animation RWBs
+ ![IMG_4406](https://github.com/user-attachments/assets/e3afbc93-6d68-48de-9b72-4b8c7a95b98a)
+
 https://youtu.be/MAoOQjsmGrs?si=w2wzaIbdclqMSdoF
 Order a 
 ilygo Board and Webflash connect with wifi (timezone change button 2).
