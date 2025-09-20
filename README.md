@@ -16,6 +16,7 @@ https://www.youtube.com/shorts/P5Maxz4nuWg
 "Turn a LilyGo ESP32 into a mini RWB desk gadget — just copy your RWB into the code."
  animation RWBs
 
+![IMG_4408](https://github.com/user-attachments/assets/134797ed-be0e-4a98-9d15-af3117ad15d3)
 
 https://youtu.be/MAoOQjsmGrs?si=w2wzaIbdclqMSdoF
 Order a 
