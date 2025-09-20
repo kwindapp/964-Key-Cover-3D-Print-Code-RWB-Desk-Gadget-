@@ -18,7 +18,8 @@ https://www.youtube.com/shorts/P5Maxz4nuWg
  https://youtube.com/shorts/cqLU5i6hsqI?si=yZdZmQX5I347ANs-
  -jitter mode added
  -5 gear H 
-![IMG_4443](https://github.com/user-attachments/assets/30d9951f-03a0-4887-8b56-39b5d4ad62fb)
+
+![IMG_4449](https://github.com/user-attachments/assets/63f15c2d-36f8-4c96-92c2-305a1a16d086)
 
 
 
