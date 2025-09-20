@@ -33,7 +33,7 @@ TFT_eSprite sprite = TFT_eSprite(&tft);
 #define RIGHT      18
 #define SHORT      16
 #define LONG       21
-#define GEARUP     14
+#define GEARUP     0     // LilyGO T-Display S3 second button
 #define GEARDOWN   13
 #define HORN       10
 #define BRIGHTNESS 16
@@ -52,7 +52,8 @@ TFT_eSprite sprite = TFT_eSprite(&tft);
 #define ORANGE 0xFD20
 #define RED    0xF800
 #define GREEN  0x07E0
-#define GOLD   0xFFD700  // warm gold
+#define GOLD   0xFFD700 
+#define BLUE   0xAEDC  // warm gold (truncated to 565)
 //======================================================
 
 #define backColor   BACK
@@ -63,9 +64,9 @@ const int RING_NUM_FONT    = 1;
 const int LABEL_FONT       = 2;
 const int TACH_CENTER_FONT = 4;
 // Banner fonts
-const int CAR_FONT   = 4;  // unchanged (car name)
-const int DATE_FONT  = 4;  // bigger date
-const int TIME_FONT  = 6;  // bigger time
+const int CAR_FONT   = 2;  // unchanged (car name)
+const int DATE_FONT  = 2;  // bigger date
+const int TIME_FONT  = 2;  // bigger time
 //======================================================
 
 // Base dimensions (unscaled originals)
@@ -102,8 +103,6 @@ int tickThickMinor = (int)round(1 * SCALE);
 #define CLAMP_MIN(v,minv) do{ if((v)<(minv)) (v)=(minv); }while(0)
 
 // ===== Parameter: adjust needle length (pixels) =====
-// Positive value shortens the needle by this many pixels.
-// Negative value lengthens it by that many pixels.
 const int NEEDLE_TIP_ADJUST = -15;
 
 // Geometry arrays
@@ -120,8 +119,9 @@ int brightnesses[5]={40,80,120,150,240};
 int selectedBrightness=3;
 int deb1=0,deb2=0,debB=0;
 
-int gearMaxSpeed[8]={12,0,60,90,120,150,190,236};
-String gears[8]={"R","N","1","2","3","4","5","6"};
+// ===== 5-speed setup with 280 km/h top speed =====
+int gearMaxSpeed[7]={12, 0, 50, 100, 160, 220, 280}; // R,N,1,2,3,4,5
+String gears[7]={"R","N","1","2","3","4","5"};
 int selectedGear=1;
 
 // state
@@ -157,6 +157,139 @@ const unsigned long LONG_PRESS_MS = 2000;      // hold BRIGHTNESS 2s to open por
 unsigned long pressStart = 0;
 bool pressActive = false;
 
+// ---------- H-pattern gear indicator (above AUX) ----------
+const int H_W = 60;     // pattern width
+const int H_H = 38;     // pattern height
+const int H_R = 6;      // corner radius for box
+const int H_LINE = 1;   // line thickness
+const int H_DOT = 8;    // gear dot radius
+
+// position above aux gauge
+const int H_X = AUX_X - H_W/-22;     // left
+const int H_Y = AUX_Y - 95;        // top
+
+// precomputed node positions in H-pattern
+int hx0, hxC, hxR, hyTop, hyMid, hyBot;
+
+// animated dot position
+float gearDotX = 0, gearDotY = 0;
+float gearDotVX = 0, gearDotVY = 0;
+
+// map selectedGear index (0..6) to target x,y
+inline void gearTargetForIndex(int gi, int &tx, int &ty){
+  // mapping:
+  // 1: top-left, 2: bottom-left, 3: top-center, 4: bottom-center,
+  // 5: top-right, R: bottom-right, N: mid-center
+  switch(gi){
+    case 2:  tx = hx0; ty = hyTop; break; // "1"
+    case 3:  tx = hx0; ty = hyBot; break; // "2"
+    case 4:  tx = hxC; ty = hyTop; break; // "3"
+    case 5:  tx = hxC; ty = hyBot; break; // "4"
+    case 6:  tx = hxR; ty = hyTop; break; // "5"
+    case 0:  tx = hxR; ty = hyBot; break; // "R"
+    case 1: default: tx = hxC; ty = hyMid; break; // "N"
+  }
+}
+
+inline void initHPatternGeometry(){
+  hx0   = H_X + 10;
+  hxR   = H_X + H_W - 10;
+  hxC   = (hx0 + hxR) / 2;
+  hyTop = H_Y + 8;
+  hyBot = H_Y + H_H - 8;
+  hyMid = (hyTop + hyBot) / 2;
+
+  int tx, ty; gearTargetForIndex(selectedGear, tx, ty);
+  gearDotX = tx; gearDotY = ty; // start dot at current gear
+  gearDotVX = gearDotVY = 0;
+}
+
+inline void drawGearIndicator(){
+  // box
+  sprite.drawRoundRect(H_X, H_Y, H_W, H_H, H_R, GREY1);
+
+  // verticals of "H"
+  //sprite.drawLine(hx0, hyTop, hx0, hyBot, GREY1);
+  //sprite.drawLine(hxC, hyTop, hxC, hyBot, GREY1);
+  //sprite.drawLine(hxR, hyTop, hxR, hyBot, GREY1);
+
+  // horizontals (connectors at top & bottom rows)
+  //sprite.drawLine(hx0, hyTop, hxR, hyTop, GREY1);
+  //sprite.drawLine(hx0, hyBot, hxR, hyBot, GREY1);
+
+  // small marks for nodes
+  sprite.fillCircle(hx0, hyTop, 1, GREY1);
+  sprite.fillCircle(hx0, hyBot, 1, GREY1);
+  sprite.fillCircle(hxC, hyTop, 1, GREY1);
+  sprite.fillCircle(hxC, hyBot, 1, GREY1);
+  sprite.fillCircle(hxR, hyTop, 1, GREY1);
+  sprite.fillCircle(hxR, hyBot, 1, GREY1);
+  sprite.fillCircle(hxC, hyMid, 1, GREY1); // Neutral
+
+  // label above
+  sprite.setTextDatum(TC_DATUM);
+  sprite.setTextColor(WHITE, backColor);
+  sprite.drawString("GEAR", H_X + H_W/2, H_Y - 8, LABEL_FONT);
+
+  // current gear text (small) right side
+  sprite.setTextDatum(TR_DATUM);
+  sprite.setTextColor(GOLD, backColor);
+  sprite.drawString(gears[selectedGear], H_X + H_W - 2, H_Y - 8, LABEL_FONT);
+
+  // animated dot
+  sprite.fillSmoothCircle((int)gearDotX, (int)gearDotY, H_DOT,BLUE);
+}
+
+// simple critically-damped-ish easing towards target
+inline void updateGearDot(){
+  int tx, ty; gearTargetForIndex(selectedGear, tx, ty);
+  float ax = (tx - gearDotX) * 0.25f - gearDotVX * 0.30f;
+  float ay = (ty - gearDotY) * 0.25f - gearDotVY * 0.30f;
+  gearDotVX += ax;
+  gearDotVY += ay;
+  gearDotX  += gearDotVX;
+  gearDotY  += gearDotVY;
+}
+
+// ---------- NEW: Gear cycling logic for Button 0 ----------
+inline void cycleGearUpButton0() {
+  // Index map: 0=R, 1=N, 2=1, 3=2, 4=3, 5=4, 6=5
+  static int dir = +1; // +1 = up towards 5, -1 = down towards N
+
+  if (selectedGear == 0) {          // R -> N, then start upwards
+    selectedGear = 1;
+    dir = +1;
+    return;
+  }
+
+  if (selectedGear == 1) {          // N -> 1, begin upward run
+    selectedGear = 2;
+    dir = +1;
+    return;
+  }
+
+  if (selectedGear == 6) {          // 5 -> 4, flip to descending
+    selectedGear = 5;               // (index 5 = gear "4")
+    dir = -1;
+    return;
+  }
+
+  // For gears 1..4 (indices 2..5), move in current direction
+  if (selectedGear >= 2 && selectedGear <= 5) {
+    selectedGear += dir;            // step to next index
+
+    // If we just stepped down from 2 -> 1 (i.e., to Neutral), flip back to up
+    if (selectedGear == 1) {
+      dir = +1;                     // next press will go N -> 1 (index 2)
+    }
+    return;
+  }
+
+  // Fallback: go to Neutral and start upwards
+  selectedGear = 1;
+  dir = +1;
+}
+
 // ---------- helpers ----------
 inline void drawTick(int cx, int cy, int Router, int Rin, float deg, int thick, uint16_t col){
   float sx = cx + Router * cos(rad*deg);
@@ -171,7 +304,7 @@ inline void drawNeedleAdjusted(int cx, int cy, float ex, float ey, uint16_t col)
   float dx = ex - cx;
   float dy = ey - cy;
   float len = sqrtf(dx*dx + dy*dy);
-  if (len <= 1) { // fallback
+  if (len <= 1) {
     sprite.drawWedgeLine(cx, cy, ex, ey, needleThick, needleTail, col);
     return;
   }
@@ -192,9 +325,9 @@ inline void updateTimeStringOncePerSecond() {
   const char* fallbackTime = "— —";
 
   struct tm tmnow;
-  if (getLocalTime(&tmnow, 200)) {                 // 200 ms timeout
-    strftime(dateStr, sizeof(dateStr), "%a %d %b %Y", &tmnow); // "Sat 20 Sep 2025"
-    strftime(timeStr, sizeof(timeStr), "%H:%M", &tmnow);       // "14:32"
+  if (getLocalTime(&tmnow, 200)) {
+    strftime(dateStr, sizeof(dateStr), "%a %d %b %Y", &tmnow);
+    strftime(timeStr, sizeof(timeStr), "%H:%M", &tmnow);
   } else {
     strncpy(dateStr, fallbackDate, sizeof(dateStr));
     strncpy(timeStr, fallbackTime, sizeof(timeStr));
@@ -273,7 +406,8 @@ void drawSpeedoLikePhoto()
   int bandInner = bandOuter - (int)round(2 * SCALE);
   sprite.drawSmoothArc(SPEEDO_X,SPEEDO_Y,bandOuter,bandInner,30,50,GREY1,backColor);
 
-  for(int v=0; v<=300; v+=10){
+  // Draw up to 280 instead of 300
+  for(int v=0; v<=280; v+=10){
     int idx=v; bool major20=(v%20==0);
     int thickA=major20?tickThickMajor:tickThickMinor;
     drawTick(SPEEDO_X,SPEEDO_Y,r-o1,r-o2,idx,thickA,WHITE);
@@ -340,7 +474,7 @@ void drawRightArcMiniGauge(int cx, int cy)
 
   float angle=55-90; if(angle<0) angle+=360;
   int ex=pivotX+(int)((aux_r-30)*cos(rad*angle));
-  int ey=pivotY+(int)((aux_r-30)*sin(rad*angle)); // keep original style
+  int ey=pivotY+(int)((aux_r-30)*sin(rad*angle));
   sprite.drawWedgeLine(pivotX,pivotY,ex,ey,3,3,ORANGE);
 
   int shiftX=-60;
@@ -384,11 +518,14 @@ void draw()
   // ===== Mini gauge =====
   drawRightArcMiniGauge(AUX_X,AUX_Y);
 
+  // ===== Gear H-indicator (above AUX) =====
+  drawGearIndicator();
+
   // ===== Needles (apply adjustable tip length) =====
   rA = 2 * rpmAngle * 1.6f;
   drawNeedleAdjusted(TACH_X,   TACH_Y,   nxp[(int)rA],  nyp[(int)rA],  ORANGE);
 
-  float kmh = speedAngle; if(kmh<0) kmh=0; if(kmh>300) kmh=300;
+  float kmh = speedAngle; if(kmh<0) kmh=0; if(kmh>280) kmh=280;  // cap 280
   sA = kmh * 1.0f;
   drawNeedleAdjusted(SPEEDO_X, SPEEDO_Y, nx2p[(int)sA], ny2p[(int)sA], ORANGE);
 
@@ -410,7 +547,7 @@ void draw()
   // spacer 1 (same font as car)
   sprite.setTextFont(CAR_FONT);
   sprite.setTextColor(GOLD, backColor);
-  sprite.drawString(BANNER_SPACER1, xcursor, bannerY, CAR_FONT);
+  sprite.drawString("   ", xcursor, bannerY, CAR_FONT);
   xcursor += wSp1;
 
   // Date (bigger font 6)
@@ -422,7 +559,7 @@ void draw()
   // spacer 2 (car font)
   sprite.setTextFont(CAR_FONT);
   sprite.setTextColor(GOLD, backColor);
-  sprite.drawString(BANNER_SPACER2, xcursor, bannerY, CAR_FONT);
+  sprite.drawString(" ", xcursor, bannerY, CAR_FONT);
   xcursor += wSp2;
 
   // Time (bigger font 6)
@@ -456,7 +593,6 @@ void setup() {
   pinMode(left_pointer,OUTPUT); pinMode(right_pointer,OUTPUT);
   pinMode(head_lights,OUTPUT); pinMode(buzzer,OUTPUT);
 
-  // TFT + sprite first (so textWidth is valid before WiFi time update)
   tft.init();
   tft.setRotation(1);
   tft.fillScreen(backColor);
@@ -512,7 +648,10 @@ void setup() {
     a++; if(a==360) a=0;
   }
 
-  // prime banner widths once we have sprite ready
+  // init H-pattern geometry and dot position
+  initHPatternGeometry();
+
+  // prime banner widths
   updateTimeStringOncePerSecond();
 }
 
@@ -534,13 +673,16 @@ void loop() {
     }
   } else debB=0;
 
+  // ===== NEW: Button 0 cycles 1->2->3->4->5->N->1 (and R->N) =====
   if(digitalRead(GEARUP)==0){
-    if(deb1==0){deb1=1;
-      if(selectedGear<7) selectedGear++;
+    if(deb1==0){
+      deb1=1;
+      cycleGearUpButton0();        // <<< new behavior
       if(speedAngle>10) speedAngle-=4;
     }
   } else deb1=0;
 
+  // GEARDOWN keeps simple decrement behavior
   if(digitalRead(GEARDOWN)==0){
     if(deb2==0){deb2=1;
       if(selectedGear>0) selectedGear--;
@@ -574,14 +716,17 @@ void loop() {
   updateTimeStringOncePerSecond();
 
   // animate banner (use measured full width)
-  bannerX -= 2;
+  bannerX -= 1;
   int tw = bannerFullWidth > 0 ? bannerFullWidth : sprite.textWidth(BANNER_TEXT, CAR_FONT);
   if (bannerX < -tw) bannerX = 320;
 
+  // animate gear dot towards target
+  updateGearDot();
+
   draw();
 
-  // simple accel/decay model
-  if(digitalRead(THROTTLE)==0 && speedAngle<min(gearMaxSpeed[selectedGear],300)){
+  // simple accel/decay model with 280 cap
+  if(digitalRead(THROTTLE)==0 && speedAngle<min(gearMaxSpeed[selectedGear],280)){
     speedAngle = speedAngle + 2 - (0.24f*selectedGear);
   }
   if(digitalRead(THROTTLE)==1 && speedAngle>0){
