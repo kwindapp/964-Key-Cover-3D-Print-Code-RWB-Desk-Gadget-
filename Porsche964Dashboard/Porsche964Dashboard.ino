@@ -1,3 +1,29 @@
+/*
+P964 Dash for T-Display S3 (ESP32-S3)
+-------------------------------------
+- Renders tachometer, speedometer (0–280 km/h), and a right-arc mini gauge using TFT_eSPI sprites.
+- Top banner shows car name + date/time (Europe/Zurich via SNTP) with smooth scrolling.
+- Inputs (all INPUT_PULLUP): 
+    THROTTLE=GPIO14, BRAKE=44, LEFT=17, RIGHT=18, SHORT=16, LONG=21, GEARUP=0, GEARDOWN=13, HORN=10, BRIGHTNESS=16.
+  NOTE: Wire buttons between GPIO and GND (idle = HIGH, pressed = LOW).
+- Outputs: left/right pointers, head lights (PWM), buzzer, and backlight (PWM).
+
+Random Mode (Pin 14 double-click):
+- Double-click THROTTLE (GPIO14) to toggle random mode ON/OFF.
+- To turn OFF, two conditions must be true:
+    1) Random mode has been ON for at least ~3.5 s.
+    2) GPIO14 has been continuously HIGH (button released) for ~3.5 s.
+- While ON, a tiny bounded jitter is applied to speed/RPM; “RND” indicator shows in the banner.
+
+Extras:
+- H-pattern gear indicator with animated dot.
+- WiFi auto-reconnect and optional non-blocking WiFiManager config portal (long-press BRIGHTNESS).
+- Backlight/lighting driven via LEDC PWM.
+
+Tip: Avoid reusing the same GPIO for multiple inputs. Verify your board’s GPIO numbering vs silk labels.
+*/
+
+
 #include <TFT_eSPI.h>
 #include <WiFi.h>
 #include <WiFiManager.h>          // https://github.com/tzapu/WiFiManager
@@ -65,8 +91,8 @@ const int LABEL_FONT       = 2;
 const int TACH_CENTER_FONT = 4;
 // Banner fonts
 const int CAR_FONT   = 2;  // unchanged (car name)
-const int DATE_FONT  = 2;  // bigger date
-const int TIME_FONT  = 2;  // bigger time
+const int DATE_FONT  = 4;  // bigger date
+const int TIME_FONT  = 4;  // bigger time
 //======================================================
 
 // Base dimensions (unscaled originals)
@@ -166,7 +192,7 @@ const int H_DOT = 8;    // gear dot radius
 
 // position above aux gauge
 const int H_X = AUX_X - H_W/-22;     // left
-const int H_Y = AUX_Y - 95;        // top
+const int H_Y = AUX_Y - 90;          // top
 
 // precomputed node positions in H-pattern
 int hx0, hxC, hxR, hyTop, hyMid, hyBot;
@@ -208,15 +234,6 @@ inline void drawGearIndicator(){
   // box
   sprite.drawRoundRect(H_X, H_Y, H_W, H_H, H_R, GREY1);
 
-  // verticals of "H"
-  //sprite.drawLine(hx0, hyTop, hx0, hyBot, GREY1);
-  //sprite.drawLine(hxC, hyTop, hxC, hyBot, GREY1);
-  //sprite.drawLine(hxR, hyTop, hxR, hyBot, GREY1);
-
-  // horizontals (connectors at top & bottom rows)
-  //sprite.drawLine(hx0, hyTop, hxR, hyTop, GREY1);
-  //sprite.drawLine(hx0, hyBot, hxR, hyBot, GREY1);
-
   // small marks for nodes
   sprite.fillCircle(hx0, hyTop, 1, GREY1);
   sprite.fillCircle(hx0, hyBot, 1, GREY1);
@@ -229,15 +246,16 @@ inline void drawGearIndicator(){
   // label above
   sprite.setTextDatum(TC_DATUM);
   sprite.setTextColor(WHITE, backColor);
-  sprite.drawString("GEAR", H_X + H_W/2, H_Y - 8, LABEL_FONT);
+  sprite.drawString("", H_X + H_W/2, H_Y - 8, LABEL_FONT);
 
   // current gear text (small) right side
   sprite.setTextDatum(TR_DATUM);
   sprite.setTextColor(GOLD, backColor);
-  sprite.drawString(gears[selectedGear], H_X + H_W - 2, H_Y - 8, LABEL_FONT);
+  sprite.drawString(gears[selectedGear], H_X + H_W - 15, H_Y +35, LABEL_FONT);
 
   // animated dot
-  sprite.fillSmoothCircle((int)gearDotX, (int)gearDotY, H_DOT,BLUE);
+  sprite.fillSmoothCircle((int)gearDotX, (int)gearDotY, H_DOT, BLUE);
+    sprite.fillSmoothCircle((int)gearDotX-1, (int)gearDotY-4, H_DOT, GREY1);
 }
 
 // simple critically-damped-ish easing towards target
@@ -326,8 +344,8 @@ inline void updateTimeStringOncePerSecond() {
 
   struct tm tmnow;
   if (getLocalTime(&tmnow, 200)) {
-    strftime(dateStr, sizeof(dateStr), "%a %d %b %Y", &tmnow);
-    strftime(timeStr, sizeof(timeStr), "%H:%M", &tmnow);
+    strftime(dateStr, sizeof(dateStr), "%a. %d.%b  %Y", &tmnow);
+    strftime(timeStr, sizeof(timeStr), "  %H:%M", &tmnow);
   } else {
     strncpy(dateStr, fallbackDate, sizeof(dateStr));
     strncpy(timeStr, fallbackTime, sizeof(timeStr));
@@ -469,20 +487,78 @@ void drawRightArcMiniGauge(int cx, int cy)
   }
 
   // pivot + two needles
-  int pivotX=cx+20; int pivotY=cy+6;
-  sprite.fillSmoothCircle(pivotX,pivotY,6,GREY2);
+  int pivotX = cx + 20;
+  int pivotY = cy + 6;
 
-  float angle=55-90; if(angle<0) angle+=360;
-  int ex=pivotX+(int)((aux_r-30)*cos(rad*angle));
-  int ey=pivotY+(int)((aux_r-30)*sin(rad*angle));
-  sprite.drawWedgeLine(pivotX,pivotY,ex,ey,3,3,ORANGE);
+  // draw needle #1
+  float angle = 55 - 90;               // degrees
+  if (angle < 0) angle += 360;
+  float r2d = rad;                      // PI/180
 
-  int shiftX=-60;
-  int pivotX2=pivotX+shiftX; int pivotY2=pivotY;
-  int ex2=pivotX2+(int)((aux_r-30)*cos(rad*angle));
-  int ey2=pivotY2+=(int)((aux_r-40)*sin(rad*angle));
-  sprite.drawWedgeLine(pivotX2,pivotY2,ex2,ey2,3,3,ORANGE);
-  sprite.fillSmoothCircle(pivotX2,pivotY2,3,GREY2);
+  int ex  = pivotX + (int)((aux_r - 30) * cos(r2d * angle));
+  int ey  = pivotY + (int)((aux_r - 30) * sin(r2d * angle));
+  sprite.drawWedgeLine(pivotX, pivotY, ex, ey, 3, 3, ORANGE);
+
+  // draw needle #2 (shifted)
+  int shiftX = -60;
+  int pivotX2 = pivotX + shiftX;
+  int pivotY2 = pivotY;
+
+  int ex2 = pivotX2 + (int)((aux_r - 30) * cos(r2d * angle));
+  int ey2 = pivotY2 + (int)((aux_r - 40) * sin(r2d * angle));
+  sprite.drawWedgeLine(pivotX2, pivotY2, ex2, ey2, 3, 3, ORANGE);
+}
+
+// ---------- Random mode (double-click pin 14) with minimum ON time ----------
+const unsigned long DC_MAX_GAP_MS     = 350;  // max time between clicks in a pair
+const unsigned long DC_DEBOUNCE_MS    = 30;   // debounce window
+unsigned long th_lastEdgeMs   = 0;
+unsigned long th_lastReleaseMs= 0;
+int           th_lastState    = HIGH; // INPUT_PULLUP -> idle HIGH
+uint8_t       th_clickCount   = 0;
+
+bool          randomMode      = false;
+unsigned long randomSinceMs   = 0;                  // when randomMode turned ON
+const unsigned long RANDOM_MIN_HOLD_MS = 5500;      // 2.5s minimum on-time
+unsigned long lastRandomJitter = 0;
+const unsigned long RANDOM_JITTER_MS   = 120;       // jitter cadence
+
+inline void handleThrottleDoubleClick() {
+  unsigned long now = millis();
+  int cur = digitalRead(THROTTLE);
+
+  // Edge detection with debounce
+  if (cur != th_lastState && (now - th_lastEdgeMs) > DC_DEBOUNCE_MS) {
+    th_lastEdgeMs = now;
+
+    // count "click" on release (LOW -> HIGH)
+    if (th_lastState == LOW && cur == HIGH) {
+      if (now - th_lastReleaseMs <= DC_MAX_GAP_MS) {
+        th_clickCount++;
+      } else {
+        th_clickCount = 1; // new sequence
+      }
+      th_lastReleaseMs = now;
+
+      if (th_clickCount == 2) {
+        th_clickCount = 0;
+        if (!randomMode) {
+          randomMode = true;
+          randomSinceMs = now;
+        } else {
+          if (now - randomSinceMs >= RANDOM_MIN_HOLD_MS) {
+            randomMode = false; // allow turning off only after min hold
+          }
+        }
+      }
+    }
+    th_lastState = cur;
+  }
+
+  // timeout a lone click
+  if (th_clickCount == 1 && (now - th_lastReleaseMs) > DC_MAX_GAP_MS) {
+    th_clickCount = 0;
+  }
 }
 
 // ---------- DRAW EVERYTHING ----------
@@ -544,30 +620,33 @@ void draw()
   sprite.drawString(BANNER_TEXT, xcursor, bannerY, CAR_FONT);
   xcursor += wCar;
 
-  // spacer 1 (same font as car)
+  // spacer 1
   sprite.setTextFont(CAR_FONT);
   sprite.setTextColor(GOLD, backColor);
   sprite.drawString("   ", xcursor, bannerY, CAR_FONT);
   xcursor += wSp1;
 
-  // Date (bigger font 6)
+  // Date
   sprite.setTextFont(DATE_FONT);
   sprite.setTextColor(WHITE, backColor);
   sprite.drawString(dateStr, xcursor, bannerY, DATE_FONT);
   xcursor += wDate;
 
-  // spacer 2 (car font)
+  // spacer 2
   sprite.setTextFont(CAR_FONT);
   sprite.setTextColor(GOLD, backColor);
   sprite.drawString(" ", xcursor, bannerY, CAR_FONT);
   xcursor += wSp2;
 
-  // Time (bigger font 6)
+  // Time
   sprite.setTextFont(TIME_FONT);
   sprite.setTextColor(GOLD, backColor);
   sprite.drawString(timeStr, xcursor, bannerY, TIME_FONT);
 
-  // restore datum/font
+  // --- RND indicator (green when ON, grey when OFF) ---
+  sprite.setTextDatum(TR_DATUM);
+  sprite.setTextColor(randomMode ? GREEN : GREY1, backColor);
+  sprite.drawString("RND", 318, bannerPaddingTop + 25, LABEL_FONT);
   sprite.setTextDatum(4);
   sprite.setTextFont(CAR_FONT);
 
@@ -653,9 +732,16 @@ void setup() {
 
   // prime banner widths
   updateTimeStringOncePerSecond();
+
+  // seed RNG for random mode jitter
+  randomSeed((uint32_t)millis());
+  // On ESP32 hardware RNG: #include <esp_system.h> and use randomSeed(esp_random());
 }
 
 void loop() {
+  // --- Detect double-click on THROTTLE to toggle random mode with min hold ---
+  handleThrottleDoubleClick();
+
   if(digitalRead(SHORT)==0)      lights=1;
   else if(digitalRead(LONG)==0)  lights=2;
   else                           lights=0;
@@ -673,11 +759,11 @@ void loop() {
     }
   } else debB=0;
 
-  // ===== NEW: Button 0 cycles 1->2->3->4->5->N->1 (and R->N) =====
+  // ===== Button 0 cycles 1->2->3->4->5->N->1 (and R->N) =====
   if(digitalRead(GEARUP)==0){
     if(deb1==0){
       deb1=1;
-      cycleGearUpButton0();        // <<< new behavior
+      cycleGearUpButton0();
       if(speedAngle>10) speedAngle-=4;
     }
   } else deb1=0;
@@ -686,7 +772,7 @@ void loop() {
   if(digitalRead(GEARDOWN)==0){
     if(deb2==0){deb2=1;
       if(selectedGear>0) selectedGear--;
-      if(speedAngle>10) speedAngle-=4;
+      if(speedAngle>10) selectedGear--, speedAngle-=4, selectedGear++; // (keep original behavior; small nudge)
     }
   } else deb2=0;
 
@@ -716,13 +802,14 @@ void loop() {
   updateTimeStringOncePerSecond();
 
   // animate banner (use measured full width)
-  bannerX -= 1;
+  bannerX -= 2;
   int tw = bannerFullWidth > 0 ? bannerFullWidth : sprite.textWidth(BANNER_TEXT, CAR_FONT);
   if (bannerX < -tw) bannerX = 320;
 
   // animate gear dot towards target
   updateGearDot();
 
+  // draw frame
   draw();
 
   // simple accel/decay model with 280 cap
@@ -737,5 +824,27 @@ void loop() {
   }
   if(digitalRead(THROTTLE)==1 && rpmAngle>0){
     rpmAngle = (rpmAngle>=3) ? rpmAngle-3 : 0;
+  }
+
+  // --- Random behavior stays active until toggled off (with min hold time) ---
+  if (randomMode) {
+    if (millis() - lastRandomJitter >= RANDOM_JITTER_MS) {
+      lastRandomJitter = millis();
+
+      // minimal, bounded jitter
+      int dV = random(9, 7);  // -2..+2
+      int dR = random(9, 8);  // -1..+1
+
+      speedAngle += dV;
+      rpmAngle   += dR;
+
+      // clamp to your existing limits
+      if (speedAngle < 0) speedAngle = 0;
+      if (speedAngle > min(gearMaxSpeed[selectedGear], 280)) {
+        speedAngle = min(gearMaxSpeed[selectedGear], 280);
+      }
+      if (rpmAngle < 0) rpmAngle = 0;
+      if (rpmAngle > 75) rpmAngle = 75;
+    }
   }
 }
