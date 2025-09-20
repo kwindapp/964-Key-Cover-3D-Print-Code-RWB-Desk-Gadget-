@@ -16,6 +16,8 @@ https://www.youtube.com/shorts/P5Maxz4nuWg
 "Turn a LilyGo ESP32 into a mini RWB desk gadget — just copy your RWB into the code."
  animation RWBs
  https://youtube.com/shorts/cqLU5i6hsqI?si=yZdZmQX5I347ANs-
+ -jitter mode added
+ -5 gear H 
 ![IMG_4443](https://github.com/user-attachments/assets/30d9951f-03a0-4887-8b56-39b5d4ad62fb)
 
 
