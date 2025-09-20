@@ -13,7 +13,7 @@ RWB-964 3D Print Key Cover (not final version)
 https://www.youtube.com/shorts/P5Maxz4nuWg 
 "Turn a LilyGo ESP32 into a mini RWB desk gadget — just copy your RWB into the code."
  animation RWBs
- ![IMG_4406](https://github.com/user-attachments/assets/e3afbc93-6d68-48de-9b72-4b8c7a95b98a)
+
 
 https://youtu.be/MAoOQjsmGrs?si=w2wzaIbdclqMSdoF
 Order a 
