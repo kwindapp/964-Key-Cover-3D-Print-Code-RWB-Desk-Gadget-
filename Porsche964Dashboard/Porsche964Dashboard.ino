@@ -59,7 +59,7 @@ TFT_eSprite sprite = TFT_eSprite(&tft);
 #define RIGHT      18
 #define SHORT      16
 #define LONG       21
-#define GEARUP     0     // LilyGO T-Display S3 second button
+#define GEARUP     14     // LilyGO T-Display S3 second button
 #define GEARDOWN   13
 #define HORN       10
 #define BRIGHTNESS 16
