@@ -52,7 +52,7 @@ Example RWB as Product NFT in your Personal Wallet use the Ronin Wallet on Deskt
 
 
 <img width="1621" height="564" alt="Screenshot 2025-09-19 at 21 54 35" src="https://github.com/user-attachments/assets/52365526-ded5-438e-b219-c29e98590dfc" />
-LoraWan RWB Radar for car spotters Worldwide Helium LoRaWan  Drigino LGT92 GPS (60 Usd)
+LoraWan RWB Radar for car spotters Worldwide Helium LoRaWan  Dragino LGT92 GPS (60 Usd)
 
 
 
