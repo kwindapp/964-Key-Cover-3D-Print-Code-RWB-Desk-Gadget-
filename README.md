@@ -9,7 +9,7 @@ RWB-964 3D Print Key Cover (not final version)
 ![IMG_4637](https://github.com/user-attachments/assets/ada3acd3-02f5-4bbc-942d-4d5c82dd98f0)
 
 
-
+3D Print use Sandpaper after 3D Print 
 ![IMG_4331](https://github.com/user-attachments/assets/945026be-da29-4464-929b-33f2f79b3eaf)
 
 
