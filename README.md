@@ -53,7 +53,8 @@ Example RWB as Product NFT in your Personal Wallet use the Ronin Wallet on Deskt
 
 <img width="1621" height="564" alt="Screenshot 2025-09-19 at 21 54 35" src="https://github.com/user-attachments/assets/52365526-ded5-438e-b219-c29e98590dfc" />
 LoraWan RWB Radar for Car spotters Worldwide
-![IMG_4675](https://github.com/user-attachments/assets/6fe49f2c-bd75-49a3-880b-e293df3b4f6b)![IMG_4678](https://github.com/user-attachments/assets/c93deb64-02d1-4232-91b5-0153695b0aed)
 
 
+
+![IMG_4675](https://github.com/user-attachments/assets/090b2a3c-fc63-4ccc-86a7-20d0cf388723)
 
